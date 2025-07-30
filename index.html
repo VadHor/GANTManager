@@ -1,0 +1,1822 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GantManager Pro - VadHorapp</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2c3e50;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --background-dark: #1a1a1a;
+            --surface-dark: #2d3748;
+            --surface-light: #4a5568;
+            --text-primary: #ffffff;
+            --text-secondary: #cbd5e0;
+            --text-muted: #a0aec0;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --shadow-light: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-medium: 0 8px 25px rgba(0, 0, 0, 0.15);
+            --shadow-heavy: 0 15px 35px rgba(0, 0, 0, 0.2);
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, var(--background-dark) 0%, #2d3748 50%, var(--background-dark) 100%);
+            background-attachment: fixed;
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: auto;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--surface-dark) 0%, var(--secondary-color) 100%);
+            padding: 2rem;
+            text-align: center;
+            box-shadow: var(--shadow-heavy);
+            border-bottom: 3px solid var(--primary-color);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent 30%, rgba(52, 152, 219, 0.1) 50%, transparent 70%);
+            animation: shimmer 3s ease-in-out infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--primary-color), #5dade2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .header .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            font-weight: 300;
+            letter-spacing: 1px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .container {
+            max-width: 1800px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+        }
+        
+        .toolbar {
+            background: rgba(45, 55, 72, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-medium);
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 1.5rem;
+            align-items: start;
+        }
+        
+        .toolbar-left {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+        }
+        
+        .toolbar-right {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            align-items: end;
+        }
+        
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.875rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            position: relative;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .btn:hover::before {
+            left: 100%;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), #5dade2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(52, 152, 219, 0.4);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, var(--success-color), #58d68d);
+            color: white;
+            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+        }
+        
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(39, 174, 96, 0.4);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, var(--warning-color), #f7dc6f);
+            color: #2c3e50;
+            box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3);
+        }
+        
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(243, 156, 18, 0.4);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger-color), #ec7063);
+            color: white;
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+        }
+        
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(231, 76, 60, 0.4);
+        }
+        
+        .file-input {
+            display: inline-block;
+            cursor: pointer;
+        }
+        
+        .file-input input {
+            display: none;
+        }
+        
+        .search-filter-container {
+            background: rgba(45, 55, 72, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-medium);
+        }
+        
+        .search-container {
+            margin-bottom: 1rem;
+        }
+        
+        .search-input {
+            width: 100%;
+            max-width: 400px;
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+        
+        .filter-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        
+        .filter-btn {
+            padding: 0.5rem 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: 20px;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .filter-btn.active,
+        .filter-btn:hover {
+            border-color: var(--primary-color);
+            background: var(--primary-color);
+            color: white;
+            transform: translateY(-1px);
+        }
+        
+        .stats-container {
+            background: rgba(45, 55, 72, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-medium);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 1rem;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-light);
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 0.25rem;
+        }
+        
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        
+        .progress-container {
+            margin-top: 1rem;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--success-color), #58d68d);
+            border-radius: 6px;
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+        
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: progressShine 2s ease-in-out infinite;
+        }
+        
+        @keyframes progressShine {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        .progress-text {
+            text-align: center;
+            margin-top: 0.5rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+        
+        .gantt-container {
+            background: rgba(45, 55, 72, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            box-shadow: var(--shadow-medium);
+            overflow: hidden;
+        }
+        
+        .gantt-header {
+            display: flex;
+            background: linear-gradient(135deg, var(--surface-dark), var(--secondary-color));
+            border-bottom: 2px solid var(--primary-color);
+            color: var(--text-primary);
+        }
+        
+        .task-column {
+            width: 500px;
+            padding: 1rem;
+            font-weight: 700;
+            font-size: 1.1rem;
+            border-right: 2px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .timeline-column {
+            flex: 1;
+            padding: 1rem;
+            font-weight: 700;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .date-labels {
+            display: flex;
+            background: rgba(45, 55, 72, 0.8);
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        
+        .date-labels .task-column {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            padding: 0.5rem 1rem;
+        }
+        
+        .date-label {
+            flex: 1;
+            text-align: center;
+            padding: 0.5rem;
+            border-right: 1px solid var(--border-color);
+            font-weight: 500;
+        }
+        
+        .gantt-body {
+            max-height: 800px;
+            overflow-y: auto;
+            background: rgba(26, 32, 44, 0.8);
+        }
+        
+        .gantt-row {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            min-height: 80px;
+            align-items: center;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .gantt-row:hover {
+            background: rgba(52, 152, 219, 0.08);
+            transform: scale(1.005);
+            box-shadow: inset 0 0 0 1px rgba(52, 152, 219, 0.2);
+        }
+        
+        .task-cell {
+            width: 500px;
+            padding: 1rem;
+            border-right: 1px solid var(--border-color);
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+        
+        .timeline-cell {
+            flex: 1;
+            padding: 0.5rem;
+            position: relative;
+            height: 80px;
+            min-height: 80px;
+        }
+        
+        .task-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .task-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: var(--primary-color);
+            border-radius: 4px;
+        }
+        
+        .task-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 1rem;
+            line-height: 1.3;
+        }
+        
+        .task-name.completed {
+            text-decoration: line-through;
+            opacity: 0.6;
+        }
+        
+        .task-name.phase {
+            color: var(--primary-color);
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        
+        .task-name.milestone {
+            color: var(--warning-color);
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        
+        .task-details {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            font-size: 0.75rem;
+        }
+        
+        .task-duration {
+            background: rgba(52, 152, 219, 0.2);
+            color: var(--primary-color);
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+        
+        .critical-badge {
+            background: linear-gradient(135deg, var(--danger-color), #ec7063);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.625rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 4px rgba(231, 76, 60, 0.3);
+        }
+        
+        .task-resources {
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+        
+        .task-note {
+            background: rgba(243, 156, 18, 0.1);
+            border: 1px solid var(--warning-color);
+            border-radius: 8px;
+            padding: 0.5rem;
+            margin-top: 0.5rem;
+            font-size: 0.75rem;
+            color: var(--warning-color);
+            line-height: 1.4;
+        }
+        
+        .task-controls {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+        
+        .control-btn {
+            padding: 0.375rem 0.75rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        
+        .control-btn:hover {
+            transform: translateY(-1px);
+        }
+        
+        .edit-btn {
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        .note-btn {
+            background: var(--warning-color);
+            color: white;
+        }
+        
+        .delete-btn {
+            background: var(--danger-color);
+            color: white;
+        }
+        
+        .task-bar {
+            height: 32px;
+            border-radius: 16px;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            align-items: center;
+            padding: 0 1rem;
+            font-size: 0.75rem;
+            color: white;
+            font-weight: 600;
+            overflow: hidden;
+            white-space: nowrap;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+            border: 2px solid rgba(255,255,255,0.2);
+            box-shadow: var(--shadow-light);
+            transition: all 0.3s ease;
+            cursor: move;
+        }
+        
+        .task-bar:hover {
+            transform: translateY(-50%) scale(1.05);
+            box-shadow: var(--shadow-medium);
+        }
+        
+        .task-bar.critical {
+            background: linear-gradient(135deg, var(--danger-color), #ec7063);
+        }
+        
+        .task-bar.normal {
+            background: linear-gradient(135deg, var(--success-color), #58d68d);
+        }
+        
+        .task-bar.phase {
+            background: linear-gradient(135deg, var(--primary-color), #5dade2);
+            height: 28px;
+            font-weight: 700;
+        }
+        
+        .task-bar.milestone {
+            background: linear-gradient(135deg, var(--warning-color), #f7dc6f);
+            height: 40px;
+            width: 40px !important;
+            border-radius: 50%;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 12px rgba(243, 156, 18, 0.4);
+        }
+        
+        .task-bar.completed {
+            opacity: 0.5;
+            background: linear-gradient(135deg, #95a5a6, #bdc3c7) !important;
+        }
+        
+        .task-bar.completed::after {
+            content: "✓";
+            position: absolute;
+            right: 0.5rem;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .phase-row {
+            background: linear-gradient(135deg, rgba(52, 152, 219, 0.1), rgba(52, 152, 219, 0.05));
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .milestone-row {
+            background: linear-gradient(135deg, rgba(243, 156, 18, 0.1), rgba(243, 156, 18, 0.05));
+            border-left: 4px solid var(--warning-color);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .modal-content {
+            background: linear-gradient(135deg, var(--surface-dark), var(--secondary-color));
+            margin: 3% auto;
+            padding: 2rem;
+            border: 1px solid var(--primary-color);
+            border-radius: 20px;
+            width: 90%;
+            max-width: 600px;
+            color: var(--text-primary);
+            box-shadow: var(--shadow-heavy);
+            animation: slideIn 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .modal-content::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--success-color), var(--warning-color));
+        }
+        
+        .modal h2 {
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+        
+        .close {
+            color: var(--text-muted);
+            float: right;
+            font-size: 2rem;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+            transition: all 0.3s ease;
+        }
+        
+        .close:hover {
+            color: var(--primary-color);
+            transform: scale(1.1);
+        }
+        
+        .notification {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            z-index: 1001;
+            box-shadow: var(--shadow-medium);
+            animation: slideInRight 0.3s ease;
+        }
+        
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .notification.success {
+            background: linear-gradient(135deg, var(--success-color), #58d68d);
+        }
+        
+        .notification.error {
+            background: linear-gradient(135deg, var(--danger-color), #ec7063);
+        }
+        
+        .empty-state {
+            padding: 4rem 2rem;
+            text-align: center;
+            color: var(--text-muted);
+        }
+        
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+        
+        .empty-state-text {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .empty-state-subtitle {
+            font-size: 1rem;
+            opacity: 0.7;
+        }
+        
+        .today-indicator {
+            position: absolute;
+            width: 3px;
+            height: 100%;
+            background: var(--danger-color);
+            z-index: 100;
+            box-shadow: 0 0 10px rgba(231, 76, 60, 0.5);
+        }
+        
+        @media (max-width: 1200px) {
+            .task-column {
+                width: 400px;
+            }
+            
+            .task-cell {
+                width: 400px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 1rem;
+            }
+            
+            .toolbar {
+                grid-template-columns: 1fr;
+            }
+            
+            .toolbar-right {
+                align-items: start;
+            }
+            
+            .task-column,
+            .task-cell {
+                width: 300px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .filter-buttons {
+                justify-content: center;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+        
+        @media print {
+            .toolbar,
+            .search-filter-container,
+            .stats-container .progress-container,
+            .task-controls,
+            .notification { 
+                display: none !important; 
+            }
+            
+            body {
+                background: white !important;
+                color: #333 !important;
+            }
+            
+            .gantt-container,
+            .gantt-header,
+            .gantt-body {
+                background: white !important;
+                color: #333 !important;
+                box-shadow: none !important;
+            }
+            
+            .task-bar {
+                border: 1px solid #ddd !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>⚡ GantManager Pro</h1>
+        <p class="subtitle">VadHorapp - Gestion de projets avancée</p>
+    </div>
+    
+    <div class="container">
+        <div class="toolbar">
+            <div class="toolbar-left">
+                <label class="file-input btn btn-primary">
+                    📁 Importer
+                    <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" />
+                </label>
+                <button onclick="showAddTaskModal()" class="btn btn-success">
+                    ➕ Nouvelle tâche
+                </button>
+                <button onclick="generateGantt()" class="btn btn-primary">
+                    🔄 Actualiser
+                </button>
+            </div>
+            <div class="toolbar-right">
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    <button onclick="exportToExcel()" class="btn btn-success">
+                        📊 Excel
+                    </button>
+                    <button onclick="exportToCSV()" class="btn btn-success">
+                        📄 CSV
+                    </button>
+                    <button onclick="exportToPDF()" class="btn btn-warning">
+                        🖨️ PDF
+                    </button>
+                    <button onclick="emailExport()" class="btn btn-primary">
+                        📧 Email
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="search-filter-container">
+            <div class="search-container">
+                <input type="text" id="searchInput" class="search-input" placeholder="🔍 Rechercher tâches, ressources, notes...">
+            </div>
+            <div class="filter-buttons">
+                <button class="filter-btn active" onclick="filterTasks('all')">📋 Toutes</button>
+                <button class="filter-btn" onclick="filterTasks('critical')">🚨 Critiques</button>
+                <button class="filter-btn" onclick="filterTasks('completed')">✅ Terminées</button>
+                <button class="filter-btn" onclick="filterTasks('pending')">⏳ En cours</button>
+                <button class="filter-btn" onclick="filterTasks('phases')">🎯 Phases</button>
+                <button class="filter-btn" onclick="filterTasks('milestones')">🏆 Jalons</button>
+            </div>
+        </div>
+        
+        <div class="stats-container">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalTasks">0</div>
+                    <div class="stat-label">Total tâches</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="completedTasks">0</div>
+                    <div class="stat-label">Terminées</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="criticalTasks">0</div>
+                    <div class="stat-label">Critiques</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="teamMembers">0</div>
+                    <div class="stat-label">Ressources</div>
+                </div>
+            </div>
+            
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="projectProgress" style="width: 0%"></div>
+                </div>
+                <div class="progress-text" id="progressText">0% du projet terminé</div>
+            </div>
+        </div>
+        
+        <div class="gantt-container" id="ganttContainer">
+            <!-- Le contenu sera généré par JavaScript -->
+        </div>
+    </div>
+
+    <!-- Modal pour ajouter/modifier une tâche -->
+    <div id="taskModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2 id="modalTitle">Nouvelle tâche</h2>
+            <form id="taskForm">
+                <div class="form-group">
+                    <label for="taskName">Nom de la tâche *</label>
+                    <input type="text" id="taskName" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="taskType">Type</label>
+                    <select id="taskType">
+                        <option value="normal">Tâche normale</option>
+                        <option value="phase">Phase</option>
+                        <option value="milestone">Jalon</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="startDate">Date de début</label>
+                    <input type="date" id="startDate" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="endDate">Date de fin</label>
+                    <input type="date" id="endDate" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="resources">Ressources</label>
+                    <input type="text" id="resources" placeholder="Nom des responsables">
+                </div>
+                
+                <div class="form-group">
+                    <label for="priority">Priorité</label>
+                    <select id="priority">
+                        <option value="normal">Normale</option>
+                        <option value="critical">Critique</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="progress">Progression (%)</label>
+                    <input type="number" id="progress" min="0" max="100" value="0">
+                </div>
+                
+                <div class="form-group">
+                    <label for="notes">Notes</label>
+                    <textarea id="notes" rows="3" placeholder="Commentaires ou instructions..."></textarea>
+                </div>
+                
+                <div style="display: flex; gap: 1rem; justify-content: end; margin-top: 2rem;">
+                    <button type="button" onclick="closeModal()" class="btn btn-secondary">Annuler</button>
+                    <button type="submit" class="btn btn-success">Sauvegarder</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Données globales
+        let tasks = [];
+        let currentFilter = 'all';
+        let editingTask = null;
+
+        // Données du projet Messagerie Sécurisée OCE
+        const demoTasks = [
+            // PHASE 1 - Sécurisation Fondamentaux
+            {
+                id: 1,
+                name: "Phase 1 - Sécurisation Fondamentaux",
+                type: "phase",
+                startDate: "2025-08-12",
+                endDate: "2025-08-25",
+                resources: "Équipe Projet",
+                priority: "critical",
+                progress: 0,
+                notes: "Arbitrages + procédures + impact RH"
+            },
+            {
+                id: 2,
+                name: "Réunion cadrage métier processus",
+                type: "normal",
+                startDate: "2025-08-12",
+                endDate: "2025-08-12",
+                resources: "ORPi, Accueil, Conseil",
+                priority: "critical",
+                progress: 0,
+                notes: "Liste 15 processus hiérarchisés"
+            },
+            {
+                id: 3,
+                name: "Arbitrages juridiques définitifs",
+                type: "normal",
+                startDate: "2025-08-12",
+                endDate: "2025-08-19",
+                resources: "Direction Juridique, OCSIN",
+                priority: "critical",
+                progress: 0,
+                notes: "Note juridique définitive"
+            },
+            {
+                id: 4,
+                name: "Formalisation procédures dégradées",
+                type: "normal",
+                startDate: "2025-08-12",
+                endDate: "2025-08-18",
+                resources: "ORPi, Conseil",
+                priority: "critical",
+                progress: 0,
+                notes: "Document procédures + critères"
+            },
+            {
+                id: 5,
+                name: "Évaluation impact macros",
+                type: "normal",
+                startDate: "2025-08-13",
+                endDate: "2025-08-16",
+                resources: "Expert Macro",
+                priority: "normal",
+                progress: 0,
+                notes: "Rapport impact + estimation"
+            },
+            {
+                id: 6,
+                name: "Mesure référentiel temps processus",
+                type: "normal",
+                startDate: "2025-08-12",
+                endDate: "2025-08-16",
+                resources: "Chefs service, Équipes",
+                priority: "normal",
+                progress: 0,
+                notes: "Référentiel temps avant transformation"
+            },
+            {
+                id: 7,
+                name: "Adaptation processus inscription V.0",
+                type: "normal",
+                startDate: "2025-08-19",
+                endDate: "2025-08-25",
+                resources: "ORPi",
+                priority: "critical",
+                progress: 0,
+                notes: "Processus inscription révisé"
+            },
+
+            // PHASE 2 - Développement Outils Formation
+            {
+                id: 8,
+                name: "Phase 2 - Développement Outils Formation",
+                type: "phase",
+                startDate: "2025-08-19",
+                endDate: "2025-09-06",
+                resources: "Équipe Projet",
+                priority: "normal",
+                progress: 0,
+                notes: "Supports + formation + groupe pilote"
+            },
+            {
+                id: 9,
+                name: "Création supports communication DE",
+                type: "normal",
+                startDate: "2025-08-19",
+                endDate: "2025-08-30",
+                resources: "Communication, ORPi",
+                priority: "normal",
+                progress: 0,
+                notes: "Fiche explicative A4 recto-verso"
+            },
+            {
+                id: 10,
+                name: "Développement aide-mémoire conseillers",
+                type: "normal",
+                startDate: "2025-08-19",
+                endDate: "2025-08-30",
+                resources: "ORPi, Experts métier",
+                priority: "normal",
+                progress: 0,
+                notes: "Document synthèse 1 page + FAQ"
+            },
+            {
+                id: 11,
+                name: "Quantification impact charge RH",
+                type: "normal",
+                startDate: "2025-08-26",
+                endDate: "2025-09-06",
+                resources: "Chefs service, Direction",
+                priority: "critical",
+                progress: 0,
+                notes: "Rapport dimensionnement + propositions"
+            },
+            {
+                id: 12,
+                name: "Préparation formation équipes",
+                type: "normal",
+                startDate: "2025-08-26",
+                endDate: "2025-09-06",
+                resources: "ORPi, Communication",
+                priority: "normal",
+                progress: 0,
+                notes: "Programme 2h + supports pédagogiques"
+            },
+            {
+                id: 13,
+                name: "Validation supports par Direction",
+                type: "normal",
+                startDate: "2025-09-02",
+                endDate: "2025-09-06",
+                resources: "Direction, Communication",
+                priority: "critical",
+                progress: 0,
+                notes: "Approbation définitive supports"
+            },
+
+            // PHASE 3 - Déploiement Tests
+            {
+                id: 14,
+                name: "Phase 3 - Déploiement Tests",
+                type: "phase",
+                startDate: "2025-09-02",
+                endDate: "2025-09-30",
+                resources: "Équipe Projet",
+                priority: "normal",
+                progress: 0,
+                notes: "Tests + équipes + procédures ajustées"
+            },
+            {
+                id: 15,
+                name: "Information équipes internes",
+                type: "normal",
+                startDate: "2025-09-02",
+                endDate: "2025-09-06",
+                resources: "Managers, Équipes",
+                priority: "normal",
+                progress: 0,
+                notes: "Briefing tous services + accusés"
+            },
+            {
+                id: 16,
+                name: "Formation vague 1 conseillers",
+                type: "normal",
+                startDate: "2025-09-09",
+                endDate: "2025-09-20",
+                resources: "50% conseillers, Formateurs",
+                priority: "critical",
+                progress: 0,
+                notes: "Équipes formées + évaluation acquis"
+            },
+            {
+                id: 17,
+                name: "Constitution groupe pilote DE",
+                type: "normal",
+                startDate: "2025-09-02",
+                endDate: "2025-09-13",
+                resources: "Conseillers désignés",
+                priority: "normal",
+                progress: 0,
+                notes: "Liste 50 DE volontaires comptes vérifiés"
+            },
+            {
+                id: 18,
+                name: "Déploiement communication externe",
+                type: "normal",
+                startDate: "2025-09-09",
+                endDate: "2025-09-27",
+                resources: "Communication, Services supports",
+                priority: "normal",
+                progress: 0,
+                notes: "Affichage + fiches + mailing réalisés"
+            },
+            {
+                id: 19,
+                name: "Tests procédures avec groupe pilote",
+                type: "normal",
+                startDate: "2025-09-16",
+                endDate: "2025-09-30",
+                resources: "ORPi, OCSIN, Groupe pilote",
+                priority: "critical",
+                progress: 0,
+                notes: "Rapport tests + dysfonctionnements + corrections"
+            },
+            {
+                id: 20,
+                name: "Formation vague 2 conseillers",
+                type: "normal",
+                startDate: "2025-09-23",
+                endDate: "2025-09-30",
+                resources: "50% restants conseillers",
+                priority: "critical",
+                progress: 0,
+                notes: "Formation complète toutes équipes"
+            },
+
+            // PHASE 4 - Consolidation Préparation GoLive
+            {
+                id: 21,
+                name: "Phase 4 - Consolidation Préparation GoLive",
+                type: "phase",
+                startDate: "2025-10-01",
+                endDate: "2025-10-15",
+                resources: "Équipe Projet",
+                priority: "normal",
+                progress: 0,
+                notes: "Suivi + équipes prêtes + continuité"
+            },
+            {
+                id: 22,
+                name: "Ajustements procédures post-tests",
+                type: "normal",
+                startDate: "2025-10-01",
+                endDate: "2025-10-08",
+                resources: "ORPi, Retours groupe pilote",
+                priority: "critical",
+                progress: 0,
+                notes: "Procédures définitives ajustées"
+            },
+            {
+                id: 23,
+                name: "Formation équipes accueil spécialisée",
+                type: "normal",
+                startDate: "2025-10-01",
+                endDate: "2025-10-08",
+                resources: "Équipes accueil",
+                priority: "normal",
+                progress: 0,
+                notes: "Équipes formées cas particuliers"
+            },
+            {
+                id: 24,
+                name: "Mise en place dispositif suivi performance",
+                type: "normal",
+                startDate: "2025-10-06",
+                endDate: "2025-10-10",
+                resources: "OCSIN, Services supports",
+                priority: "critical",
+                progress: 0,
+                notes: "Tableau bord + indicateurs + seuils"
+            },
+            {
+                id: 25,
+                name: "Validation finale go-live production",
+                type: "normal",
+                startDate: "2025-10-13",
+                endDate: "2025-10-15",
+                resources: "Direction, OCSIN, ORPi",
+                priority: "critical",
+                progress: 0,
+                notes: "Décision go-live + date production"
+            },
+
+            // JALONS
+            {
+                id: 26,
+                name: "JALON 1 - Validation Fondamentaux",
+                type: "milestone",
+                startDate: "2025-08-19",
+                endDate: "2025-08-19",
+                resources: "Direction",
+                priority: "critical",
+                progress: 0,
+                notes: "Arbitrages + procédures + impact RH"
+            },
+            {
+                id: 27,
+                name: "JALON 2 - Validation Outils Formation",
+                type: "milestone",
+                startDate: "2025-09-06",
+                endDate: "2025-09-06",
+                resources: "Direction",
+                priority: "critical",
+                progress: 0,
+                notes: "Supports + formation + groupe pilote"
+            },
+            {
+                id: 28,
+                name: "JALON 3 - Validation Préparation",
+                type: "milestone",
+                startDate: "2025-09-30",
+                endDate: "2025-09-30",
+                resources: "Direction",
+                priority: "critical",
+                progress: 0,
+                notes: "Tests + équipes + procédures ajustées"
+            },
+            {
+                id: 29,
+                name: "JALON 4 - Décision GoLive",
+                type: "milestone",
+                startDate: "2025-10-15",
+                endDate: "2025-10-15",
+                resources: "Direction",
+                priority: "critical",
+                progress: 0,
+                notes: "Suivi + équipes prêtes + continuité"
+            }
+        ];
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            // Charger les données de démonstration
+            tasks = [...demoTasks];
+            
+            // Configurer les événements
+            setupEventListeners();
+            
+            // Générer le Gantt initial
+            generateGantt();
+            
+            // Mettre à jour les statistiques
+            updateStats();
+            
+            // Définir la date de début par défaut
+            document.getElementById('startDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('endDate').value = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        });
+
+        function setupEventListeners() {
+            // Recherche en temps réel
+            document.getElementById('searchInput').addEventListener('input', function(e) {
+                searchTasks(e.target.value);
+            });
+
+            // Import de fichier
+            document.getElementById('fileInput').addEventListener('change', handleFileImport);
+
+            // Formulaire de tâche
+            document.getElementById('taskForm').addEventListener('submit', handleTaskSubmit);
+
+            // Fermer modal en cliquant à l'extérieur
+            window.addEventListener('click', function(e) {
+                const modal = document.getElementById('taskModal');
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
+        }
+
+        function showAddTaskModal() {
+            editingTask = null;
+            document.getElementById('modalTitle').textContent = 'Nouvelle tâche';
+            document.getElementById('taskForm').reset();
+            document.getElementById('startDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('endDate').value = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            document.getElementById('taskModal').style.display = 'block';
+        }
+
+        function editTask(taskId) {
+            const task = tasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            editingTask = task;
+            document.getElementById('modalTitle').textContent = 'Modifier la tâche';
+            
+            // Remplir le formulaire
+            document.getElementById('taskName').value = task.name;
+            document.getElementById('taskType').value = task.type;
+            document.getElementById('startDate').value = task.startDate;
+            document.getElementById('endDate').value = task.endDate;
+            document.getElementById('resources').value = task.resources;
+            document.getElementById('priority').value = task.priority;
+            document.getElementById('progress').value = task.progress;
+            document.getElementById('notes').value = task.notes || '';
+            
+            document.getElementById('taskModal').style.display = 'block';
+        }
+
+        function deleteTask(taskId) {
+            if (confirm('Êtes-vous sûr de vouloir supprimer cette tâche ?')) {
+                tasks = tasks.filter(t => t.id !== taskId);
+                generateGantt();
+                updateStats();
+                showNotification('Tâche supprimée avec succès', 'success');
+            }
+        }
+
+        function toggleTaskComplete(taskId) {
+            const task = tasks.find(t => t.id === taskId);
+            if (task) {
+                task.progress = task.progress === 100 ? 0 : 100;
+                generateGantt();
+                updateStats();
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('taskModal').style.display = 'none';
+        }
+
+        function handleTaskSubmit(e) {
+            e.preventDefault();
+            
+            const formData = {
+                name: document.getElementById('taskName').value,
+                type: document.getElementById('taskType').value,
+                startDate: document.getElementById('startDate').value,
+                endDate: document.getElementById('endDate').value,
+                resources: document.getElementById('resources').value,
+                priority: document.getElementById('priority').value,
+                progress: parseInt(document.getElementById('progress').value),
+                notes: document.getElementById('notes').value
+            };
+
+            if (editingTask) {
+                // Modifier la tâche existante
+                Object.assign(editingTask, formData);
+                showNotification('Tâche modifiée avec succès', 'success');
+            } else {
+                // Ajouter une nouvelle tâche
+                const newTask = {
+                    id: Date.now(),
+                    ...formData
+                };
+                tasks.push(newTask);
+                showNotification('Tâche ajoutée avec succès', 'success');
+            }
+
+            closeModal();
+            generateGantt();
+            updateStats();
+        }
+
+        function generateGantt() {
+            const container = document.getElementById('ganttContainer');
+            
+            if (tasks.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📊</div>
+                        <div class="empty-state-text">Aucune tâche</div>
+                        <div class="empty-state-subtitle">Ajoutez votre première tâche pour commencer</div>
+                    </div>
+                `;
+                return;
+            }
+
+            // Filtrer les tâches
+            const filteredTasks = getFilteredTasks();
+            
+            // Calculer la plage de dates
+            const dateRange = calculateDateRange(filteredTasks);
+            const timelineWidth = calculateTimelineWidth(dateRange);
+
+            // Générer l'en-tête
+            const header = generateHeader(dateRange);
+            
+            // Générer les lignes de tâches
+            const rows = filteredTasks.map(task => generateTaskRow(task, dateRange, timelineWidth)).join('');
+
+            container.innerHTML = `
+                ${header}
+                <div class="gantt-body">
+                    ${rows}
+                </div>
+            `;
+        }
+
+        function getFilteredTasks() {
+            let filtered = [...tasks];
+            
+            // Appliquer le filtre de type
+            switch (currentFilter) {
+                case 'critical':
+                    filtered = filtered.filter(t => t.priority === 'critical');
+                    break;
+                case 'completed':
+                    filtered = filtered.filter(t => t.progress === 100);
+                    break;
+                case 'pending':
+                    filtered = filtered.filter(t => t.progress < 100);
+                    break;
+                case 'phases':
+                    filtered = filtered.filter(t => t.type === 'phase');
+                    break;
+                case 'milestones':
+                    filtered = filtered.filter(t => t.type === 'milestone');
+                    break;
+            }
+
+            // Appliquer le filtre de recherche
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            if (searchTerm) {
+                filtered = filtered.filter(task => 
+                    task.name.toLowerCase().includes(searchTerm) ||
+                    task.resources.toLowerCase().includes(searchTerm) ||
+                    (task.notes && task.notes.toLowerCase().includes(searchTerm))
+                );
+            }
+
+            return filtered;
+        }
+
+        function calculateDateRange(tasks) {
+            if (tasks.length === 0) {
+                const today = new Date();
+                return {
+                    start: new Date(today.getFullYear(), today.getMonth(), 1),
+                    end: new Date(today.getFullYear(), today.getMonth() + 3, 0)
+                };
+            }
+
+            const dates = tasks.flatMap(task => [new Date(task.startDate), new Date(task.endDate)]);
+            const minDate = new Date(Math.min(...dates));
+            const maxDate = new Date(Math.max(...dates));
+            
+            // Ajouter une marge
+            minDate.setDate(minDate.getDate() - 7);
+            maxDate.setDate(maxDate.getDate() + 7);
+            
+            return { start: minDate, end: maxDate };
+        }
+
+        function calculateTimelineWidth(dateRange) {
+            const daysDiff = Math.ceil((dateRange.end - dateRange.start) / (1000 * 60 * 60 * 24));
+            return Math.max(daysDiff * 30, 800); // Minimum 800px
+        }
+
+        function generateHeader(dateRange) {
+            const weeks = generateWeekLabels(dateRange);
+            const weekLabels = weeks.map(week => `<div class="date-label">${week}</div>`).join('');
+
+            return `
+                <div class="gantt-header">
+                    <div class="task-column">📋 Tâches</div>
+                    <div class="timeline-column">📅 Chronologie</div>
+                </div>
+                <div class="date-labels">
+                    <div class="task-column">Détails</div>
+                    ${weekLabels}
+                </div>
+            `;
+        }
+
+        function generateWeekLabels(dateRange) {
+            const weeks = [];
+            const current = new Date(dateRange.start);
+            
+            while (current <= dateRange.end) {
+                const weekStart = new Date(current);
+                const weekEnd = new Date(current);
+                weekEnd.setDate(weekEnd.getDate() + 6);
+                
+                weeks.push(`${formatShortDate(weekStart)} - ${formatShortDate(weekEnd)}`);
+                current.setDate(current.getDate() + 7);
+            }
+            
+            return weeks;
+        }
+
+        function generateTaskRow(task, dateRange, timelineWidth) {
+            const taskBarStyle = calculateTaskBarStyle(task, dateRange, timelineWidth);
+            const rowClass = task.type === 'phase' ? 'phase-row' : task.type === 'milestone' ? 'milestone-row' : '';
+            const completedClass = task.progress === 100 ? 'completed' : '';
+            
+            return `
+                <div class="gantt-row ${rowClass}">
+                    <div class="task-cell">
+                        <div class="task-header">
+                            <input type="checkbox" class="task-checkbox" 
+                                   ${task.progress === 100 ? 'checked' : ''} 
+                                   onchange="toggleTaskComplete(${task.id})">
+                            <span class="task-name ${task.type} ${completedClass}">${task.name}</span>
+                        </div>
+                        
+                        <div class="task-details">
+                            <span class="task-duration">${calculateDuration(task)} jours</span>
+                            ${task.priority === 'critical' ? '<span class="critical-badge">CRITIQUE</span>' : ''}
+                            <span class="task-resources">👤 ${task.resources}</span>
+                        </div>
+                        
+                        ${task.notes ? `<div class="task-note">📝 ${task.notes}</div>` : ''}
+                        
+                        <div class="task-controls">
+                            <button class="control-btn edit-btn" onclick="editTask(${task.id})">
+                                ✏️ Modifier
+                            </button>
+                            <button class="control-btn delete-btn" onclick="deleteTask(${task.id})">
+                                🗑️ Supprimer
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="timeline-cell">
+                        <div class="task-bar ${task.type} ${task.priority} ${completedClass}" 
+                             style="${taskBarStyle}"
+                             title="${task.name} (${task.progress}%)">
+                            ${task.type === 'milestone' ? '🏆' : task.name}
+                            ${task.type !== 'milestone' ? `<span style="margin-left: auto;">${task.progress}%</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function calculateTaskBarStyle(task, dateRange, timelineWidth) {
+            const startDate = new Date(task.startDate);
+            const endDate = new Date(task.endDate);
+            const rangeStart = dateRange.start;
+            const totalDays = (dateRange.end - dateRange.start) / (1000 * 60 * 60 * 24);
+            
+            const startOffset = (startDate - rangeStart) / (1000 * 60 * 60 * 24);
+            const duration = (endDate - startDate) / (1000 * 60 * 60 * 24) + 1;
+            
+            const leftPercent = (startOffset / totalDays) * 100;
+            const widthPercent = (duration / totalDays) * 100;
+            
+            if (task.type === 'milestone') {
+                return `left: ${leftPercent}%; transform: translateX(-50%);`;
+            }
+            
+            return `left: ${leftPercent}%; width: ${widthPercent}%;`;
+        }
+
+        function calculateDuration(task) {
+            const start = new Date(task.startDate);
+            const end = new Date(task.endDate);
+            return Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+        }
+
+        function formatShortDate(date) {
+            return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+        }
+
+        function filterTasks(filter) {
+            currentFilter = filter;
+            
+            // Mettre à jour l'apparence des boutons
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            generateGantt();
+        }
+
+        function searchTasks(searchTerm) {
+            generateGantt();
+        }
+
+        function updateStats() {
+            const totalTasks = tasks.length;
+            const completedTasks = tasks.filter(t => t.progress === 100).length;
+            const criticalTasks = tasks.filter(t => t.priority === 'critical').length;
+            const uniqueResources = new Set(tasks.map(t => t.resources)).size;
+            
+            const progressPercent = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+            
+            document.getElementById('totalTasks').textContent = totalTasks;
+            document.getElementById('completedTasks').textContent = completedTasks;
+            document.getElementById('criticalTasks').textContent = criticalTasks;
+            document.getElementById('teamMembers').textContent = uniqueResources;
+            
+            document.getElementById('projectProgress').style.width = `${progressPercent}%`;
+            document.getElementById('progressText').textContent = `${progressPercent}% du projet terminé`;
+        }
+
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Fonctions d'export
+        function exportToCSV() {
+            const headers = ['Nom', 'Type', 'Début', 'Fin', 'Ressources', 'Priorité', 'Progression', 'Notes'];
+            const csvContent = [
+                headers.join(','),
+                ...tasks.map(task => [
+                    `"${task.name}"`,
+                    task.type,
+                    task.startDate,
+                    task.endDate,
+                    `"${task.resources}"`,
+                    task.priority,
+                    task.progress,
+                    `"${task.notes || ''}"`
+                ].join(','))
+            ].join('\n');
+
+            downloadFile(csvContent, 'gantt-project.csv', 'text/csv');
+            showNotification('Export CSV réussi', 'success');
+        }
+
+        function exportToExcel() {
+            showNotification('Fonctionnalité Excel en développement', 'error');
+        }
+
+        function exportToPDF() {
+            window.print();
+        }
+
+        function emailExport() {
+            const subject = encodeURIComponent('Planning de projet Gantt');
+            const body = encodeURIComponent(`Bonjour,\n\nVeuillez trouver ci-joint le planning de projet.\n\nNombre de tâches: ${tasks.length}\nTâches terminées: ${tasks.filter(t => t.progress === 100).length}\n\nCordialement`);
+            
+            window.open(`mailto:?subject=${subject}&body=${body}`);
+        }
+
+        function handleFileImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    if (file.name.endsWith('.csv')) {
+                        parseCSV(e.target.result);
+                    } else {
+                        showNotification('Format de fichier non supporté', 'error');
+                    }
+                } catch (error) {
+                    showNotification('Erreur lors de l\'import', 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function parseCSV(csvText) {
+            const lines = csvText.split('\n');
+            const headers = lines[0].split(',');
+            
+            const importedTasks = [];
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',');
+                if (values.length >= 6) {
+                    importedTasks.push({
+                        id: Date.now() + i,
+                        name: values[0].replace(/"/g, ''),
+                        type: values[1] || 'normal',
+                        startDate: values[2],
+                        endDate: values[3],
+                        resources: values[4].replace(/"/g, ''),
+                        priority: values[5] || 'normal',
+                        progress: parseInt(values[6]) || 0,
+                        notes: values[7] ? values[7].replace(/"/g, '') : ''
+                    });
+                }
+            }
+
+            tasks = tasks.concat(importedTasks);
+            generateGantt();
+            updateStats();
+            showNotification(`${importedTasks.length} tâches importées`, 'success');
+        }
+
+        function downloadFile(content, filename, contentType) {
+            const blob = new Blob([content], { type: contentType });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
