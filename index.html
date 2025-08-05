@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -512,6 +513,30 @@
             letter-spacing: 0.5px;
             box-shadow: 0 2px 4px rgba(231, 76, 60, 0.3);
         }
+
+        /* Indicateurs pour les tâches en retard ou proches de l'échéance */
+        .overdue-badge {
+            background: linear-gradient(135deg, var(--danger-color), #ec7063);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.625rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 4px rgba(231, 76, 60, 0.3);
+        }
+        .dueSoon-badge {
+            background: linear-gradient(135deg, var(--warning-color), #f7dc6f);
+            color: #2c3e50;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.625rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 4px rgba(243, 156, 18, 0.3);
+        }
         
         .task-resources {
             color: var(--text-muted);
@@ -632,6 +657,20 @@
             font-weight: bold;
             color: white;
         }
+
+        /*
+         * Classes pour indiquer les tâches proches de leur échéance ou en retard.
+         * Ces couleurs surchargent uniquement les tâches normales afin de ne pas
+         * perturber l'apparence des phases ou des jalons. Les tâches terminées
+         * ne sont pas concernées.
+         */
+        .task-bar.due-soon:not(.milestone):not(.phase) {
+            background: linear-gradient(135deg, var(--warning-color), #f7dc6f);
+            color: #2c3e50;
+        }
+        .task-bar.overdue:not(.milestone):not(.phase) {
+            background: linear-gradient(135deg, var(--danger-color), #ec7063);
+        }
         
         .phase-row {
             background: linear-gradient(135deg, rgba(52, 152, 219, 0.1), rgba(52, 152, 219, 0.05));
@@ -654,6 +693,8 @@
             background: rgba(0, 0, 0, 0.8);
             backdrop-filter: blur(10px);
             animation: fadeIn 0.3s ease;
+            /* Permettre le défilement si le contenu dépasse la hauteur de l'écran */
+            overflow-y: auto;
         }
         
         @keyframes fadeIn {
@@ -871,6 +912,50 @@
                 border: 1px solid #ddd !important;
             }
         }
+
+        /* === Styles pour la vue Kanban === */
+        .kanban-board {
+            display: flex;
+            gap: 1rem;
+            overflow-x: auto;
+            padding: 1rem 0;
+        }
+
+        .kanban-column {
+            flex: 1;
+            min-width: 250px;
+            background: rgba(45, 55, 72, 0.95);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1rem;
+            box-shadow: var(--shadow-medium);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .kanban-column h3 {
+            margin-bottom: 0.75rem;
+            color: var(--primary-color);
+            font-size: 1rem;
+            text-align: center;
+        }
+
+        .kanban-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.75rem;
+            margin-bottom: 0.75rem;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .kanban-card:hover {
+            background: rgba(52, 152, 219, 0.2);
+            box-shadow: var(--shadow-light);
+        }
     </style>
 </head>
 <body>
@@ -886,6 +971,36 @@
                     📁 Importer
                     <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" />
                 </label>
+                <!-- Sélecteur de projet -->
+                <select id="projectSelect" onchange="switchProject(this.value)" style="padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.05); color: var(--text-primary); font-weight: 600; margin-right: 0.5rem;">
+                    <option value="">Sélectionner projet</option>
+                </select>
+                <!-- Bouton pour créer un nouveau projet -->
+                <button onclick="showAddProjectModal()" class="btn btn-primary">
+                    🆕 Nouveau projet
+                </button>
+                <!-- Bouton pour gérer les ressources -->
+                <button onclick="showResourceModal()" class="btn btn-success">
+                    👥 Ressources
+                </button>
+                <button onclick="showDecomposeModal()" class="btn btn-primary">
+                    🧠 Décomposer
+                </button>
+                <!-- Assistant de création de projet -->
+                <button onclick="showMethodModal()" class="btn btn-primary">
+                    🧩 Assistant projet
+                </button>
+                <!-- Boutons pour le macro‑planning global -->
+                <button onclick="generateMacroPlan()" class="btn btn-primary" id="macroPlanButton">
+                    📅 Macro planning
+                </button>
+                <!-- Bouton pour passer en vue Kanban -->
+                <button onclick="generateKanban()" class="btn btn-primary" id="kanbanButton">
+                    🗂️ Kanban
+                </button>
+                <button onclick="backToProject()" class="btn btn-primary" id="backToProjectButton" style="display:none;">
+                    ↩️ Retour projet
+                </button>
                 <button onclick="showAddTaskModal()" class="btn btn-success">
                     ➕ Nouvelle tâche
                 </button>
@@ -990,7 +1105,9 @@
                 
                 <div class="form-group">
                     <label for="resources">Ressources</label>
-                    <input type="text" id="resources" placeholder="Nom des responsables">
+                    <!-- Champ ressource avec suggestions -->
+                    <input type="text" id="resources" list="resourceOptions" placeholder="Nom des responsables (séparés par virgule)">
+                    <datalist id="resourceOptions"></datalist>
                 </div>
                 
                 <div class="form-group">
@@ -1012,8 +1129,129 @@
                 </div>
                 
                 <div style="display: flex; gap: 1rem; justify-content: end; margin-top: 2rem;">
-                    <button type="button" onclick="closeModal()" class="btn btn-secondary">Annuler</button>
+                    <button type="button" onclick="closeModal()" class="btn btn-warning">Annuler</button>
                     <button type="submit" class="btn btn-success">Sauvegarder</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal pour ajouter/modifier un projet -->
+    <div id="projectModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeProjectModal()">&times;</span>
+            <h2 id="projectModalTitle">Nouveau projet</h2>
+            <form id="projectForm">
+                <div class="form-group">
+                    <label for="projectName">Nom du projet *</label>
+                    <input type="text" id="projectName" required>
+                </div>
+                <div class="form-group">
+                    <label for="projectStart">Date de début</label>
+                    <input type="date" id="projectStart">
+                </div>
+                <div class="form-group">
+                    <label for="projectEnd">Date de fin</label>
+                    <input type="date" id="projectEnd">
+                </div>
+                <div class="form-group">
+                    <label for="projectDescription">Description</label>
+                    <textarea id="projectDescription" rows="3"></textarea>
+                </div>
+                <div style="display: flex; gap: 1rem; justify-content: end; margin-top: 2rem;">
+                    <button type="button" onclick="closeProjectModal()" class="btn btn-warning">Annuler</button>
+                    <button type="submit" class="btn btn-success">Sauvegarder</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal pour gérer les ressources -->
+    <div id="resourceModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeResourceModal()">&times;</span>
+            <h2>Gestion des ressources</h2>
+            <!-- Liste des ressources -->
+            <div id="resourceList" style="margin-bottom: 1rem;"></div>
+            <form id="resourceForm">
+                <div class="form-group">
+                    <label for="newResource">Ajouter une ressource</label>
+                    <input type="text" id="newResource" placeholder="Nom de la ressource">
+                </div>
+                <div style="display: flex; gap: 1rem; justify-content: end;">
+                    <button type="button" onclick="closeResourceModal()" class="btn btn-warning">Fermer</button>
+                    <button type="submit" class="btn btn-success">Ajouter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal pour décomposer un problème complexe en tâches -->
+    <div id="decomposeModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeDecomposeModal()">&times;</span>
+            <h2>Décomposition de problème</h2>
+            <p style="margin-bottom: 1rem; color: var(--text-secondary); font-size: 0.9rem;">
+                Décrivez votre problème complexe et séparez chaque étape ou tâche sur une nouvelle ligne. Vous pouvez aussi
+                spécifier la date de début et la durée pour planifier automatiquement les tâches générées.
+            </p>
+            <form id="decomposeForm">
+                <div class="form-group">
+                    <label for="problemText">Description du problème *</label>
+                    <textarea id="problemText" rows="5" placeholder="Chaque ligne sera convertie en une tâche distincte"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="decomposeStartDate">Date de début des tâches</label>
+                    <input type="date" id="decomposeStartDate">
+                </div>
+                <div class="form-group">
+                    <label for="decomposeDuration">Durée (jours) par tâche</label>
+                    <input type="number" id="decomposeDuration" value="5" min="1" max="365">
+                </div>
+                <div class="form-group">
+                    <label for="decomposeType">Type de tâches générées</label>
+                    <select id="decomposeType">
+                        <option value="normal">Tâche normale</option>
+                        <option value="phase">Phase</option>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 1rem; justify-content: end; margin-top: 2rem;">
+                    <button type="button" onclick="closeDecomposeModal()" class="btn btn-warning">Annuler</button>
+                    <button type="submit" class="btn btn-success">Décomposer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal pour assistant de création de projet selon une méthode -->
+    <div id="methodModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeMethodModal()">&times;</span>
+            <h2>Assistant projet</h2>
+            <p style="margin-bottom: 1rem; color: var(--text-secondary); font-size: 0.9rem;">
+                Sélectionnez une méthodologie reconnue pour générer automatiquement des phases de projet. Vous pouvez
+                définir la date de début et la durée de chaque phase.
+            </p>
+            <form id="methodForm">
+                <div class="form-group">
+                    <label for="methodSelect">Méthodologie</label>
+                    <select id="methodSelect" required>
+                        <option value="">-- Choisir une méthode --</option>
+                        <option value="waterfall">Cycle en cascade (Waterfall)</option>
+                        <option value="agile">Scrum / Agile</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="methodStartDate">Date de début du projet</label>
+                    <input type="date" id="methodStartDate">
+                </div>
+                <div class="form-group">
+                    <label for="methodPhaseDuration">Durée (jours) par phase</label>
+                    <input type="number" id="methodPhaseDuration" value="10" min="1" max="365">
+                </div>
+                <div style="display: flex; gap: 1rem; justify-content: end; margin-top: 2rem;">
+                    <button type="button" onclick="closeMethodModal()" class="btn btn-warning">Annuler</button>
+                    <button type="submit" class="btn btn-success">Générer</button>
                 </div>
             </form>
         </div>
@@ -1024,6 +1262,10 @@
         let tasks = [];
         let currentFilter = 'all';
         let editingTask = null;
+        // Gestion multi-projets et ressources
+        let projects = [];
+        let currentProjectId = null;
+        let resourcesList = [];
 
         // Données du projet Messagerie Sécurisée OCE
         const demoTasks = [
@@ -1359,19 +1601,38 @@
 
         // Initialisation
         document.addEventListener('DOMContentLoaded', function() {
-            // Charger les données de démonstration
-            tasks = [...demoTasks];
-            
+            // Créer un projet par défaut avec les tâches de démonstration
+            const defaultProject = {
+                id: Date.now(),
+                name: 'Projet Démo',
+                tasks: [...demoTasks],
+                startDate: '',
+                endDate: '',
+                description: ''
+            };
+            projects.push(defaultProject);
+            currentProjectId = defaultProject.id;
+            tasks = defaultProject.tasks;
+
+            // Construire la liste des ressources initiales à partir des tâches
+            updateResourcesFromTasks();
+
             // Configurer les événements
             setupEventListeners();
-            
+
+            // Mettre à jour la liste déroulante des projets
+            renderProjectSelect();
+
+            // Générer la liste des suggestions de ressources
+            renderResourceOptions();
+
             // Générer le Gantt initial
             generateGantt();
-            
+
             // Mettre à jour les statistiques
             updateStats();
-            
-            // Définir la date de début par défaut
+
+            // Définir la date de début par défaut pour le formulaire de tâches
             document.getElementById('startDate').value = new Date().toISOString().split('T')[0];
             document.getElementById('endDate').value = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
         });
@@ -1388,11 +1649,43 @@
             // Formulaire de tâche
             document.getElementById('taskForm').addEventListener('submit', handleTaskSubmit);
 
-            // Fermer modal en cliquant à l'extérieur
+            // Formulaire de projet
+            const projectForm = document.getElementById('projectForm');
+            if (projectForm) {
+                projectForm.addEventListener('submit', handleProjectSubmit);
+            }
+
+            // Formulaire de ressource
+            const resForm = document.getElementById('resourceForm');
+            if (resForm) {
+                resForm.addEventListener('submit', handleResourceSubmit);
+            }
+
+            // Formulaire de décomposition
+            const decomposeForm = document.getElementById('decomposeForm');
+            if (decomposeForm) {
+                decomposeForm.addEventListener('submit', handleDecomposeSubmit);
+            }
+
+            // Formulaire de l'assistant projet
+            const methodForm = document.getElementById('methodForm');
+            if (methodForm) {
+                methodForm.addEventListener('submit', handleMethodSubmit);
+            }
+
+            // Fermer modals en cliquant à l'extérieur
             window.addEventListener('click', function(e) {
-                const modal = document.getElementById('taskModal');
-                if (e.target === modal) {
+                const taskModal = document.getElementById('taskModal');
+                const projectModalEl = document.getElementById('projectModal');
+                const resourceModalEl = document.getElementById('resourceModal');
+                if (e.target === taskModal) {
                     closeModal();
+                }
+                if (e.target === projectModalEl) {
+                    closeProjectModal();
+                }
+                if (e.target === resourceModalEl) {
+                    closeResourceModal();
                 }
             });
         }
@@ -1429,6 +1722,8 @@
         function deleteTask(taskId) {
             if (confirm('Êtes-vous sûr de vouloir supprimer cette tâche ?')) {
                 tasks = tasks.filter(t => t.id !== taskId);
+                updateResourcesFromTasks();
+                renderResourceOptions();
                 generateGantt();
                 updateStats();
                 showNotification('Tâche supprimée avec succès', 'success');
@@ -1476,6 +1771,9 @@
                 showNotification('Tâche ajoutée avec succès', 'success');
             }
 
+            // Mettre à jour la liste des ressources en fonction des nouvelles tâches
+            updateResourcesFromTasks();
+            renderResourceOptions();
             closeModal();
             generateGantt();
             updateStats();
@@ -1612,6 +1910,8 @@
             const taskBarStyle = calculateTaskBarStyle(task, dateRange, timelineWidth);
             const rowClass = task.type === 'phase' ? 'phase-row' : task.type === 'milestone' ? 'milestone-row' : '';
             const completedClass = task.progress === 100 ? 'completed' : '';
+            // Déterminer la classe en fonction de l'échéance (en retard ou proche)
+            const dueClass = getDueClass(task);
             
             return `
                 <div class="gantt-row ${rowClass}">
@@ -1627,6 +1927,8 @@
                             <span class="task-duration">${calculateDuration(task)} jours</span>
                             ${task.priority === 'critical' ? '<span class="critical-badge">CRITIQUE</span>' : ''}
                             <span class="task-resources">👤 ${task.resources}</span>
+                            ${dueClass === 'due-soon' && task.progress < 100 ? '<span class="dueSoon-badge">À échéance</span>' : ''}
+                            ${dueClass === 'overdue' && task.progress < 100 ? '<span class="overdue-badge">EN RETARD</span>' : ''}
                         </div>
                         
                         ${task.notes ? `<div class="task-note">📝 ${task.notes}</div>` : ''}
@@ -1642,7 +1944,7 @@
                     </div>
                     
                     <div class="timeline-cell">
-                        <div class="task-bar ${task.type} ${task.priority} ${completedClass}" 
+                        <div class="task-bar ${task.type} ${task.priority} ${dueClass} ${completedClass}" 
                              style="${taskBarStyle}"
                              title="${task.name} (${task.progress}%)">
                             ${task.type === 'milestone' ? '🏆' : task.name}
@@ -1678,6 +1980,33 @@
             return Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
         }
 
+        /**
+         * Détermine si une tâche est en retard ou proche de son échéance.
+         * Une tâche terminée n'est jamais considérée comme en retard.
+         * - 'overdue' : la date de fin est passée et la tâche n'est pas terminée.
+         * - 'due-soon' : la date de fin est dans 3 jours ou moins et la tâche n'est pas terminée.
+         * - '' : aucun statut particulier.
+         * @param {Object} task L'objet tâche contenant les dates et l'avancement
+         * @returns {string} La classe à appliquer sur la barre de tâche
+         */
+        function getDueClass(task) {
+            if (!task || task.progress === 100) return '';
+            const today = new Date();
+            // Remise à zéro de l'heure pour éviter les effets de bord
+            today.setHours(0, 0, 0, 0);
+            const endDate = new Date(task.endDate);
+            endDate.setHours(0, 0, 0, 0);
+            // Si la date de fin est avant aujourd'hui : en retard
+            if (endDate < today) {
+                return 'overdue';
+            }
+            const diffDays = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
+            if (diffDays <= 3) {
+                return 'due-soon';
+            }
+            return '';
+        }
+
         function formatShortDate(date) {
             return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}`;
         }
@@ -1700,7 +2029,16 @@
             const totalTasks = tasks.length;
             const completedTasks = tasks.filter(t => t.progress === 100).length;
             const criticalTasks = tasks.filter(t => t.priority === 'critical').length;
-            const uniqueResources = new Set(tasks.map(t => t.resources)).size;
+            const resSet = new Set();
+            tasks.forEach(t => {
+                if (t.resources) {
+                    t.resources.split(',').forEach(r => {
+                        const trimmed = r.trim();
+                        if (trimmed) resSet.add(trimmed);
+                    });
+                }
+            });
+            const uniqueResources = resSet.size;
             
             const progressPercent = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
             
@@ -1774,7 +2112,7 @@
                         showNotification('Format de fichier non supporté', 'error');
                     }
                 } catch (error) {
-                    showNotification('Erreur lors de l\'import', 'error');
+                    showNotification('Erreur lors de l'+'import', 'error');
                 }
             };
             reader.readAsText(file);
@@ -1803,6 +2141,8 @@
             }
 
             tasks = tasks.concat(importedTasks);
+            updateResourcesFromTasks();
+            renderResourceOptions();
             generateGantt();
             updateStats();
             showNotification(`${importedTasks.length} tâches importées`, 'success');
@@ -1816,6 +2156,431 @@
             a.download = filename;
             a.click();
             window.URL.revokeObjectURL(url);
+        }
+
+        // ------- Gestion des ressources -------
+        function updateResourcesFromTasks() {
+            resourcesList = [];
+            tasks.forEach(task => {
+                if (task.resources) {
+                    task.resources.split(',').forEach(res => {
+                        const trimmed = res.trim();
+                        if (trimmed && !resourcesList.includes(trimmed)) {
+                            resourcesList.push(trimmed);
+                        }
+                    });
+                }
+            });
+        }
+
+        function renderResourceOptions() {
+            const dataList = document.getElementById('resourceOptions');
+            if (!dataList) return;
+            dataList.innerHTML = resourcesList.map(r => `<option value="${r}">`).join('');
+        }
+
+        function showResourceModal() {
+            renderResourceList();
+            const modal = document.getElementById('resourceModal');
+            if (modal) modal.style.display = 'block';
+            const input = document.getElementById('newResource');
+            if (input) input.value = '';
+        }
+
+        function renderResourceList() {
+            const container = document.getElementById('resourceList');
+            if (!container) return;
+            if (resourcesList.length === 0) {
+                container.innerHTML = '<p>Aucune ressource ajoutée.</p>';
+            } else {
+                container.innerHTML = resourcesList.map((res, index) => `
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-bottom:1px solid var(--border-color);">
+                        <span>${res}</span>
+                        <button class="btn btn-danger" style="padding:0.25rem 0.5rem;font-size:0.7rem;" onclick="removeResource(${index})">Supprimer</button>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function closeResourceModal() {
+            const modal = document.getElementById('resourceModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function handleResourceSubmit(e) {
+            e.preventDefault();
+            const input = document.getElementById('newResource');
+            if (!input) return;
+            const newRes = input.value.trim();
+            if (newRes && !resourcesList.includes(newRes)) {
+                resourcesList.push(newRes);
+                renderResourceList();
+                renderResourceOptions();
+                showNotification('Ressource ajoutée', 'success');
+            }
+            input.value = '';
+        }
+
+        function removeResource(index) {
+            resourcesList.splice(index, 1);
+            renderResourceList();
+            renderResourceOptions();
+        }
+
+        // ------- Assistant de création de projet -------
+        function showMethodModal() {
+            const modal = document.getElementById('methodModal');
+            if (!modal) return;
+            // Initialise les champs par défaut
+            const startInput = document.getElementById('methodStartDate');
+            if (startInput) startInput.value = new Date().toISOString().split('T')[0];
+            const durationInput = document.getElementById('methodPhaseDuration');
+            if (durationInput) durationInput.value = 10;
+            const methodSelect = document.getElementById('methodSelect');
+            if (methodSelect) methodSelect.value = '';
+            modal.style.display = 'block';
+        }
+
+        function closeMethodModal() {
+            const modal = document.getElementById('methodModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function handleMethodSubmit(e) {
+            e.preventDefault();
+            const methodSelect = document.getElementById('methodSelect');
+            if (!methodSelect || !methodSelect.value) {
+                showNotification('Veuillez choisir une méthodologie', 'error');
+                return;
+            }
+            const method = methodSelect.value;
+            const startStr = document.getElementById('methodStartDate').value;
+            const phaseDuration = parseInt(document.getElementById('methodPhaseDuration').value) || 10;
+            if (!startStr) {
+                showNotification('Veuillez choisir une date de début', 'error');
+                return;
+            }
+            const startDate = new Date(startStr);
+            let phases = [];
+            if (method === 'waterfall') {
+                phases = [
+                    'Analyse des besoins',
+                    'Conception',
+                    'Développement',
+                    'Tests',
+                    'Déploiement'
+                ];
+            } else if (method === 'agile') {
+                phases = [
+                    'Sprint 1 - Planification et backlog',
+                    'Sprint 2 - Développement et intégration',
+                    'Sprint 3 - Tests et revue',
+                    'Sprint 4 - Déploiement et rétrospective'
+                ];
+            }
+            let currentStart = new Date(startDate);
+            phases.forEach((phaseName, index) => {
+                const phaseStart = new Date(currentStart);
+                const phaseEnd = new Date(currentStart);
+                phaseEnd.setDate(phaseEnd.getDate() + phaseDuration - 1);
+                const newTask = {
+                    id: Date.now() + index,
+                    name: phaseName,
+                    type: 'phase',
+                    startDate: phaseStart.toISOString().split('T')[0],
+                    endDate: phaseEnd.toISOString().split('T')[0],
+                    resources: '',
+                    priority: 'normal',
+                    progress: 0,
+                    notes: ''
+                };
+                tasks.push(newTask);
+                currentStart.setDate(currentStart.getDate() + phaseDuration);
+            });
+            showNotification(`${phases.length} phases générées`, 'success');
+            updateResourcesFromTasks();
+            renderResourceOptions();
+            generateGantt();
+            updateStats();
+            closeMethodModal();
+        }
+
+        // ------- Décomposition de problème -------
+        function showDecomposeModal() {
+            const modal = document.getElementById('decomposeModal');
+            if (!modal) return;
+            // Remplir les valeurs par défaut
+            const startInput = document.getElementById('decomposeStartDate');
+            if (startInput) {
+                // Utiliser la date du jour ou la date de début du projet
+                const today = new Date().toISOString().split('T')[0];
+                startInput.value = today;
+            }
+            const durationInput = document.getElementById('decomposeDuration');
+            if (durationInput) {
+                durationInput.value = 5;
+            }
+            const typeSelect = document.getElementById('decomposeType');
+            if (typeSelect) {
+                typeSelect.value = 'normal';
+            }
+            const textArea = document.getElementById('problemText');
+            if (textArea) textArea.value = '';
+            modal.style.display = 'block';
+        }
+
+        function closeDecomposeModal() {
+            const modal = document.getElementById('decomposeModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function handleDecomposeSubmit(e) {
+            e.preventDefault();
+            const text = document.getElementById('problemText').value;
+            const startDateStr = document.getElementById('decomposeStartDate').value;
+            const duration = parseInt(document.getElementById('decomposeDuration').value) || 1;
+            const type = document.getElementById('decomposeType').value;
+            if (!text.trim()) {
+                showNotification('Veuillez saisir au moins une étape pour décomposer', 'error');
+                return;
+            }
+            const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            if (lines.length === 0) {
+                showNotification('Aucune ligne valide trouvée', 'error');
+                return;
+            }
+            let currentStart = new Date(startDateStr || new Date());
+            lines.forEach((line, index) => {
+                const taskStart = new Date(currentStart);
+                const taskEnd = new Date(currentStart);
+                taskEnd.setDate(taskEnd.getDate() + duration - 1);
+                const newTask = {
+                    id: Date.now() + index,
+                    name: line,
+                    type: type,
+                    startDate: taskStart.toISOString().split('T')[0],
+                    endDate: taskEnd.toISOString().split('T')[0],
+                    resources: '',
+                    priority: 'normal',
+                    progress: 0,
+                    notes: ''
+                };
+                tasks.push(newTask);
+                // Passer à la prochaine date de début
+                currentStart.setDate(currentStart.getDate() + duration);
+            });
+            showNotification(`${lines.length} tâches générées`, 'success');
+            // Mettre à jour ressources et interface
+            updateResourcesFromTasks();
+            renderResourceOptions();
+            generateGantt();
+            updateStats();
+            closeDecomposeModal();
+        }
+
+        // ------- Gestion des projets -------
+        function renderProjectSelect() {
+            const select = document.getElementById('projectSelect');
+            if (!select) return;
+            select.innerHTML = '';
+            projects.forEach(proj => {
+                const option = document.createElement('option');
+                option.value = proj.id;
+                option.textContent = proj.name;
+                if (proj.id === currentProjectId) option.selected = true;
+                select.appendChild(option);
+            });
+        }
+
+        function switchProject(projectId) {
+            const idNum = parseInt(projectId);
+            const project = projects.find(p => p.id === idNum);
+            if (!project) return;
+            currentProjectId = project.id;
+            tasks = project.tasks;
+            updateResourcesFromTasks();
+            renderResourceOptions();
+            generateGantt();
+            updateStats();
+        }
+
+        let editingProject = null;
+
+        function showAddProjectModal() {
+            // Réinitialiser la fenêtre modale pour un nouveau projet
+            editingProject = null;
+            document.getElementById('projectModalTitle').textContent = 'Nouveau projet';
+            document.getElementById('projectForm').reset();
+            const todayStr = new Date().toISOString().split('T')[0];
+            document.getElementById('projectStart').value = todayStr;
+            document.getElementById('projectEnd').value = todayStr;
+            document.getElementById('projectModal').style.display = 'block';
+        }
+
+        function closeProjectModal() {
+            const modal = document.getElementById('projectModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function handleProjectSubmit(e) {
+            e.preventDefault();
+            const name = document.getElementById('projectName').value.trim();
+            const start = document.getElementById('projectStart').value;
+            const end = document.getElementById('projectEnd').value;
+            const description = document.getElementById('projectDescription').value;
+            if (!name) {
+                showNotification('Le nom du projet est obligatoire', 'error');
+                return;
+            }
+            if (editingProject) {
+                editingProject.name = name;
+                editingProject.startDate = start;
+                editingProject.endDate = end;
+                editingProject.description = description;
+                showNotification('Projet modifié', 'success');
+            } else {
+                const newProject = {
+                    id: Date.now(),
+                    name: name,
+                    startDate: start,
+                    endDate: end,
+                    description: description,
+                    tasks: []
+                };
+                projects.push(newProject);
+                currentProjectId = newProject.id;
+                tasks = newProject.tasks;
+                showNotification('Projet ajouté', 'success');
+            }
+            renderProjectSelect();
+            renderResourceOptions();
+            generateGantt();
+            updateStats();
+            closeProjectModal();
+        }
+
+        // ------- Macro‑planning de tous les projets -------
+        let isMacroView = false;
+
+        /**
+         * Génère une vue macro‑planning qui affiche l'ensemble des projets
+         * sous forme de barres couvrant de leur date de début à leur date de fin.
+         */
+        function generateMacroPlan() {
+            // Ne rien faire si aucun projet
+            if (!projects || projects.length === 0) return;
+            // Collecter toutes les tâches de tous les projets
+            let allTasks = [];
+            projects.forEach(p => {
+                if (p.tasks && p.tasks.length) {
+                    allTasks = allTasks.concat(p.tasks);
+                }
+            });
+            // Si aucune tâche, afficher un état vide
+            if (allTasks.length === 0) {
+                document.getElementById('ganttContainer').innerHTML = '<div class="empty-state"><div class="empty-state-icon">📊</div><div class="empty-state-text">Aucune tâche dans les projets</div></div>';
+                return;
+            }
+            // Calculer la plage de dates globale
+            const dateRange = calculateDateRange(allTasks);
+            const header = generateHeader(dateRange);
+            // Générer une ligne par projet
+            const rows = projects.map(project => {
+                const projTasks = project.tasks;
+                if (!projTasks || projTasks.length === 0) return '';
+                // Déterminer les dates min et max du projet
+                const dates = projTasks.flatMap(t => [new Date(t.startDate), new Date(t.endDate)]);
+                let minDate = new Date(Math.min(...dates));
+                let maxDate = new Date(Math.max(...dates));
+                if (project.startDate) {
+                    const s = new Date(project.startDate);
+                    if (s < minDate) minDate = s;
+                }
+                if (project.endDate) {
+                    const e = new Date(project.endDate);
+                    if (e > maxDate) maxDate = e;
+                }
+                const totalDays = (dateRange.end - dateRange.start) / (1000 * 60 * 60 * 24);
+                const startOffset = (minDate - dateRange.start) / (1000 * 60 * 60 * 24);
+                const duration = (maxDate - minDate) / (1000 * 60 * 60 * 24) + 1;
+                const leftPercent = (startOffset / totalDays) * 100;
+                const widthPercent = (duration / totalDays) * 100;
+                return `
+                    <div class="gantt-row">
+                        <div class="task-cell">
+                            <div class="task-header">
+                                <span class="task-name">${project.name}</span>
+                            </div>
+                        </div>
+                        <div class="timeline-cell">
+                            <div class="task-bar" style="left: ${leftPercent}%; width: ${widthPercent}%; background: linear-gradient(135deg, var(--primary-color), #5dade2);">
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            document.getElementById('ganttContainer').innerHTML = header + '<div class="gantt-body">' + rows + '</div>';
+            isMacroView = true;
+            // Afficher le bouton de retour
+            const backBtn = document.getElementById('backToProjectButton');
+            if (backBtn) backBtn.style.display = 'inline-flex';
+        }
+
+        /**
+         * Retourne à la vue détaillée du projet courant en régénérant le Gantt
+         * et en masquant le bouton de retour.
+         */
+        function backToProject() {
+            isMacroView = false;
+            generateGantt();
+            const backBtn = document.getElementById('backToProjectButton');
+            if (backBtn) backBtn.style.display = 'none';
+        }
+
+        /**
+         * Génère une vue Kanban affichant les tâches réparties en colonnes :
+         * - À faire (progression 0%)
+         * - En cours (0 < progression < 100)
+         * - Terminées (progression = 100)
+         * Les cartes permettent d'éditer la tâche en cliquant dessus.
+         */
+        function generateKanban() {
+            if (!tasks || tasks.length === 0) {
+                document.getElementById('ganttContainer').innerHTML = '<div class="empty-state"><div class="empty-state-icon">🗂️</div><div class="empty-state-text">Aucune tâche pour ce projet</div></div>';
+                return;
+            }
+            const todo = tasks.filter(t => t.progress === 0);
+            const inProgress = tasks.filter(t => t.progress > 0 && t.progress < 100);
+            const done = tasks.filter(t => t.progress === 100);
+            const buildCards = (arr) => {
+                return arr.map(task => {
+                    return `<div class="kanban-card" onclick="editTask(${task.id})">
+                                <strong>${task.name}</strong><br>
+                                <small>${task.startDate} → ${task.endDate}</small><br>
+                                ${task.resources ? `<span style="font-size:0.7rem; color: var(--text-muted);">${task.resources}</span>` : ''}
+                            </div>`;
+                }).join('');
+            };
+            const boardHTML = `
+                <div class="kanban-board">
+                    <div class="kanban-column">
+                        <h3>À faire</h3>
+                        ${buildCards(todo)}
+                    </div>
+                    <div class="kanban-column">
+                        <h3>En cours</h3>
+                        ${buildCards(inProgress)}
+                    </div>
+                    <div class="kanban-column">
+                        <h3>Terminées</h3>
+                        ${buildCards(done)}
+                    </div>
+                </div>
+            `;
+            document.getElementById('ganttContainer').innerHTML = boardHTML;
+            // Afficher le bouton de retour pour revenir au Gantt détaillé
+            const backBtn = document.getElementById('backToProjectButton');
+            if (backBtn) backBtn.style.display = 'inline-flex';
         }
     </script>
 </body>
