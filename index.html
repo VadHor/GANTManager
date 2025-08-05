@@ -309,6 +309,27 @@
         .progress-container {
             margin-top: 1rem;
         }
+
+        /* Détails du projet (nom, description, notes) affichés sous la barre d'outils */
+        .project-details {
+            background: rgba(45, 55, 72, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-medium);
+            color: var(--text-primary);
+            font-size: 0.875rem;
+        }
+        .project-details h3 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        .project-details p {
+            margin-bottom: 0.5rem;
+        }
         
         .progress-bar {
             width: 100%;
@@ -537,6 +558,43 @@
             letter-spacing: 0.5px;
             box-shadow: 0 2px 4px rgba(243, 156, 18, 0.3);
         }
+
+        /* Styles pour le macro planning inter‑projets */
+        .macro-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .macro-name {
+            width: 200px;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+        .macro-bar-container {
+            flex: 1;
+            position: relative;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .macro-bar {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--success-color), #58d68d);
+        }
+        .macro-milestone {
+            position: absolute;
+            top: 4px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--warning-color);
+            box-shadow: 0 0 4px rgba(243, 156, 18, 0.8);
+        }
         
         .task-resources {
             color: var(--text-muted);
@@ -693,8 +751,6 @@
             background: rgba(0, 0, 0, 0.8);
             backdrop-filter: blur(10px);
             animation: fadeIn 0.3s ease;
-            /* Permettre le défilement si le contenu dépasse la hauteur de l'écran */
-            overflow-y: auto;
         }
         
         @keyframes fadeIn {
@@ -714,7 +770,9 @@
             box-shadow: var(--shadow-heavy);
             animation: slideIn 0.3s ease;
             position: relative;
-            overflow: hidden;
+            /* Permettre le défilement interne lorsque le formulaire est long */
+            max-height: 90vh;
+            overflow-y: auto;
         }
         
         @keyframes slideIn {
@@ -912,50 +970,6 @@
                 border: 1px solid #ddd !important;
             }
         }
-
-        /* === Styles pour la vue Kanban === */
-        .kanban-board {
-            display: flex;
-            gap: 1rem;
-            overflow-x: auto;
-            padding: 1rem 0;
-        }
-
-        .kanban-column {
-            flex: 1;
-            min-width: 250px;
-            background: rgba(45, 55, 72, 0.95);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 1rem;
-            box-shadow: var(--shadow-medium);
-            display: flex;
-            flex-direction: column;
-        }
-
-        .kanban-column h3 {
-            margin-bottom: 0.75rem;
-            color: var(--primary-color);
-            font-size: 1rem;
-            text-align: center;
-        }
-
-        .kanban-card {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 0.75rem;
-            margin-bottom: 0.75rem;
-            font-size: 0.85rem;
-            color: var(--text-primary);
-            cursor: pointer;
-            transition: background 0.2s ease;
-        }
-
-        .kanban-card:hover {
-            background: rgba(52, 152, 219, 0.2);
-            box-shadow: var(--shadow-light);
-        }
     </style>
 </head>
 <body>
@@ -990,22 +1004,23 @@
                 <button onclick="showMethodModal()" class="btn btn-primary">
                     🧩 Assistant projet
                 </button>
-                <!-- Boutons pour le macro‑planning global -->
-                <button onclick="generateMacroPlan()" class="btn btn-primary" id="macroPlanButton">
-                    📅 Macro planning
-                </button>
-                <!-- Bouton pour passer en vue Kanban -->
-                <button onclick="generateKanban()" class="btn btn-primary" id="kanbanButton">
-                    🗂️ Kanban
-                </button>
-                <button onclick="backToProject()" class="btn btn-primary" id="backToProjectButton" style="display:none;">
-                    ↩️ Retour projet
+                <!-- Macro planning inter‑projets -->
+                <button onclick="showMacroModal()" class="btn btn-primary">
+                    🗓️ Macro planning
                 </button>
                 <button onclick="showAddTaskModal()" class="btn btn-success">
                     ➕ Nouvelle tâche
                 </button>
+                <!-- Bouton pour créer rapidement un jalon (milestone) -->
+                <button onclick="showAddTaskModal('milestone')" class="btn btn-warning">
+                    🏆 Nouveau jalon
+                </button>
                 <button onclick="generateGantt()" class="btn btn-primary">
                     🔄 Actualiser
+                </button>
+                <!-- Bouton pour réinitialiser le planning du projet courant -->
+                <button onclick="resetPlanning()" class="btn btn-danger">
+                    🗑️ Vider planning
                 </button>
             </div>
             <div class="toolbar-right">
@@ -1026,6 +1041,14 @@
             </div>
         </div>
         
+        <!-- Détails du projet courant -->
+        <div id="projectDetails" class="project-details" style="display: none;">
+            <h3>Détails du projet</h3>
+            <p><strong>Nom :</strong> <span id="projName"></span></p>
+            <p><strong>Description :</strong> <span id="projDescription"></span></p>
+            <p><strong>Notes :</strong> <span id="projNotes"></span></p>
+        </div>
+
         <div class="search-filter-container">
             <div class="search-container">
                 <input type="text" id="searchInput" class="search-input" placeholder="🔍 Rechercher tâches, ressources, notes...">
@@ -1158,6 +1181,10 @@
                     <label for="projectDescription">Description</label>
                     <textarea id="projectDescription" rows="3"></textarea>
                 </div>
+                <div class="form-group">
+                    <label for="projectNotes">Notes du projet</label>
+                    <textarea id="projectNotes" rows="3" placeholder="Notes libres pour ce projet"></textarea>
+                </div>
                 <div style="display: flex; gap: 1rem; justify-content: end; margin-top: 2rem;">
                     <button type="button" onclick="closeProjectModal()" class="btn btn-warning">Annuler</button>
                     <button type="submit" class="btn btn-success">Sauvegarder</button>
@@ -1254,6 +1281,15 @@
                     <button type="submit" class="btn btn-success">Générer</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Modal pour macro planning inter‑projets -->
+    <div id="macroModal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <span class="close" onclick="closeMacroModal()">&times;</span>
+            <h2>Macro planning des projets</h2>
+            <div id="macroContainer" style="margin-top: 1.5rem;"></div>
         </div>
     </div>
 
@@ -1604,11 +1640,16 @@
             // Créer un projet par défaut avec les tâches de démonstration
             const defaultProject = {
                 id: Date.now(),
-                name: 'Projet Démo',
+                // Utiliser un nom explicite pour le projet initial.  Le client a
+                // indiqué que le projet de démonstration s'appelle
+                // « Messagerie sécurisée ».  Ce nom sera affiché dans la liste
+                // déroulante des projets et dans le macro‑planning.
+                name: 'Messagerie sécurisée',
                 tasks: [...demoTasks],
                 startDate: '',
                 endDate: '',
-                description: ''
+                description: '',
+                notes: ''
             };
             projects.push(defaultProject);
             currentProjectId = defaultProject.id;
@@ -1631,6 +1672,9 @@
 
             // Mettre à jour les statistiques
             updateStats();
+
+            // Afficher les détails du projet par défaut
+            renderProjectDetails();
 
             // Définir la date de début par défaut pour le formulaire de tâches
             document.getElementById('startDate').value = new Date().toISOString().split('T')[0];
@@ -1678,6 +1722,9 @@
                 const taskModal = document.getElementById('taskModal');
                 const projectModalEl = document.getElementById('projectModal');
                 const resourceModalEl = document.getElementById('resourceModal');
+                const decomposeModalEl = document.getElementById('decomposeModal');
+                const methodModalEl = document.getElementById('methodModal');
+                const macroModalEl = document.getElementById('macroModal');
                 if (e.target === taskModal) {
                     closeModal();
                 }
@@ -1687,18 +1734,53 @@
                 if (e.target === resourceModalEl) {
                     closeResourceModal();
                 }
+                if (e.target === decomposeModalEl) {
+                    closeDecomposeModal();
+                }
+                if (e.target === methodModalEl) {
+                    closeMethodModal();
+                }
+                if (e.target === macroModalEl) {
+                    closeMacroModal();
+                }
             });
         }
 
-        function showAddTaskModal() {
+        /**
+         * Affiche le formulaire d’ajout de tâche.  La fonction accepte un type de
+         * tâche optionnel (normal, phase ou milestone) pour pré‑remplir le
+         * formulaire.  Lorsqu’un jalon est demandé, les dates de début et de fin
+         * sont alignées pour représenter un événement ponctuel, et le titre du
+         * formulaire est adapté.
+         *
+         * @param {string|null} presetType
+         */
+        function showAddTaskModal(presetType = null) {
             editingTask = null;
-            document.getElementById('modalTitle').textContent = 'Nouvelle tâche';
+            const modalTitleEl = document.getElementById('modalTitle');
+            // Ajuster le titre selon le type
+            if (presetType === 'milestone') {
+                modalTitleEl.textContent = 'Nouveau jalon';
+            } else {
+                modalTitleEl.textContent = 'Nouvelle tâche';
+            }
+            // Remise à zéro du formulaire
             document.getElementById('taskForm').reset();
-            document.getElementById('startDate').value = new Date().toISOString().split('T')[0];
-            document.getElementById('endDate').value = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            // Dates par défaut
+            const todayStr = new Date().toISOString().split('T')[0];
+            const oneWeekLater = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            document.getElementById('startDate').value = todayStr;
+            document.getElementById('endDate').value = oneWeekLater;
+            // Pré‑sélection du type
+            if (presetType) {
+                const typeSelect = document.getElementById('taskType');
+                if (typeSelect) typeSelect.value = presetType;
+                if (presetType === 'milestone') {
+                    document.getElementById('endDate').value = todayStr;
+                }
+            }
             document.getElementById('taskModal').style.display = 'block';
         }
-
         function editTask(taskId) {
             const task = tasks.find(t => t.id === taskId);
             if (!task) return;
@@ -2305,6 +2387,79 @@
             closeMethodModal();
         }
 
+        // ------- Macro planning inter‑projets -------
+        function showMacroModal() {
+            generateMacroPlanning();
+            const modal = document.getElementById('macroModal');
+            if (modal) modal.style.display = 'block';
+        }
+
+        function closeMacroModal() {
+            const modal = document.getElementById('macroModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function generateMacroPlanning() {
+            const container = document.getElementById('macroContainer');
+            if (!container) return;
+            if (!projects || projects.length === 0) {
+                container.innerHTML = '<p>Aucun projet disponible.</p>';
+                return;
+            }
+            // Calculer la plage globale de dates pour tous les projets
+            const allDates = [];
+            projects.forEach(proj => {
+                if (proj.tasks && proj.tasks.length) {
+                    const startDates = proj.tasks.map(t => new Date(t.startDate));
+                    const endDates = proj.tasks.map(t => new Date(t.endDate));
+                    const minDate = new Date(Math.min(...startDates));
+                    const maxDate = new Date(Math.max(...endDates));
+                    allDates.push(minDate, maxDate);
+                }
+            });
+            if (allDates.length === 0) {
+                container.innerHTML = '<p>Aucune tâche dans les projets.</p>';
+                return;
+            }
+            let globalStart = new Date(Math.min(...allDates));
+            let globalEnd = new Date(Math.max(...allDates));
+            // Ajouter une marge de quelques jours pour la visibilité
+            globalStart.setDate(globalStart.getDate() - 7);
+            globalEnd.setDate(globalEnd.getDate() + 7);
+            const totalDays = (globalEnd - globalStart) / (1000 * 60 * 60 * 24);
+            let html = '';
+            projects.forEach(proj => {
+                if (!proj.tasks || proj.tasks.length === 0) return;
+                const startDates = proj.tasks.map(t => new Date(t.startDate));
+                const endDates = proj.tasks.map(t => new Date(t.endDate));
+                const projStartDate = new Date(Math.min(...startDates));
+                const projEndDate = new Date(Math.max(...endDates));
+                const startOffset = (projStartDate - globalStart) / (1000 * 60 * 60 * 24);
+                const duration = (projEndDate - projStartDate) / (1000 * 60 * 60 * 24) + 1;
+                const leftPct = (startOffset / totalDays) * 100;
+                const widthPct = (duration / totalDays) * 100;
+                // Milestones
+                const milestones = proj.tasks.filter(t => t.type === 'milestone');
+                let milestoneHtml = '';
+                milestones.forEach(ms => {
+                    const msDate = new Date(ms.startDate);
+                    const msOffset = (msDate - globalStart) / (1000 * 60 * 60 * 24);
+                    const msPct = (msOffset / totalDays) * 100;
+                    milestoneHtml += `<div class="macro-milestone" style="left: ${msPct}%" title="${ms.name}"></div>`;
+                });
+                html += `
+                    <div class="macro-row">
+                        <div class="macro-name">${proj.name}</div>
+                        <div class="macro-bar-container">
+                            <div class="macro-bar" style="left: ${leftPct}%; width: ${widthPct}%;"></div>
+                            ${milestoneHtml}
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
         // ------- Décomposition de problème -------
         function showDecomposeModal() {
             const modal = document.getElementById('decomposeModal');
@@ -2392,6 +2547,29 @@
             });
         }
 
+        /**
+         * Met à jour la section affichant les détails du projet courant (nom,
+         * description et notes).  Si aucun projet n'est sélectionné, la
+         * section est masquée.
+         */
+        function renderProjectDetails() {
+            const detailsEl = document.getElementById('projectDetails');
+            if (!detailsEl) return;
+            const project = projects.find(p => p.id === currentProjectId);
+            if (!project) {
+                detailsEl.style.display = 'none';
+                return;
+            }
+            // Remplir les champs
+            const nameSpan = document.getElementById('projName');
+            const descSpan = document.getElementById('projDescription');
+            const notesSpan = document.getElementById('projNotes');
+            if (nameSpan) nameSpan.textContent = project.name || '';
+            if (descSpan) descSpan.textContent = project.description || '';
+            if (notesSpan) notesSpan.textContent = project.notes || '';
+            detailsEl.style.display = 'block';
+        }
+
         function switchProject(projectId) {
             const idNum = parseInt(projectId);
             const project = projects.find(p => p.id === idNum);
@@ -2402,6 +2580,7 @@
             renderResourceOptions();
             generateGantt();
             updateStats();
+            renderProjectDetails();
         }
 
         let editingProject = null;
@@ -2428,6 +2607,7 @@
             const start = document.getElementById('projectStart').value;
             const end = document.getElementById('projectEnd').value;
             const description = document.getElementById('projectDescription').value;
+            const notes = document.getElementById('projectNotes').value;
             if (!name) {
                 showNotification('Le nom du projet est obligatoire', 'error');
                 return;
@@ -2437,6 +2617,7 @@
                 editingProject.startDate = start;
                 editingProject.endDate = end;
                 editingProject.description = description;
+                editingProject.notes = notes;
                 showNotification('Projet modifié', 'success');
             } else {
                 const newProject = {
@@ -2445,6 +2626,7 @@
                     startDate: start,
                     endDate: end,
                     description: description,
+                    notes: notes,
                     tasks: []
                 };
                 projects.push(newProject);
@@ -2453,134 +2635,38 @@
                 showNotification('Projet ajouté', 'success');
             }
             renderProjectSelect();
+            renderProjectDetails();
             renderResourceOptions();
             generateGantt();
             updateStats();
             closeProjectModal();
         }
 
-        // ------- Macro‑planning de tous les projets -------
-        let isMacroView = false;
-
         /**
-         * Génère une vue macro‑planning qui affiche l'ensemble des projets
-         * sous forme de barres couvrant de leur date de début à leur date de fin.
+         * Vider toutes les tâches du projet courant.  Demande confirmation à
+         * l'utilisateur avant de supprimer irrémédiablement les données.  Met à
+         * jour le Gantt, les statistiques et les ressources une fois les
+         * tâches supprimées.
          */
-        function generateMacroPlan() {
-            // Ne rien faire si aucun projet
-            if (!projects || projects.length === 0) return;
-            // Collecter toutes les tâches de tous les projets
-            let allTasks = [];
-            projects.forEach(p => {
-                if (p.tasks && p.tasks.length) {
-                    allTasks = allTasks.concat(p.tasks);
-                }
-            });
-            // Si aucune tâche, afficher un état vide
-            if (allTasks.length === 0) {
-                document.getElementById('ganttContainer').innerHTML = '<div class="empty-state"><div class="empty-state-icon">📊</div><div class="empty-state-text">Aucune tâche dans les projets</div></div>';
-                return;
+        function resetPlanning() {
+            const confirmation = confirm('Êtes-vous sûr de vouloir effacer toutes les tâches de ce projet ? Cette action est irréversible.');
+            if (!confirmation) return;
+            // Trouver le projet courant et vider sa liste de tâches
+            const project = projects.find(p => p.id === currentProjectId);
+            if (project) {
+                project.tasks = [];
+                tasks = project.tasks;
+            } else {
+                tasks = [];
             }
-            // Calculer la plage de dates globale
-            const dateRange = calculateDateRange(allTasks);
-            const header = generateHeader(dateRange);
-            // Générer une ligne par projet
-            const rows = projects.map(project => {
-                const projTasks = project.tasks;
-                if (!projTasks || projTasks.length === 0) return '';
-                // Déterminer les dates min et max du projet
-                const dates = projTasks.flatMap(t => [new Date(t.startDate), new Date(t.endDate)]);
-                let minDate = new Date(Math.min(...dates));
-                let maxDate = new Date(Math.max(...dates));
-                if (project.startDate) {
-                    const s = new Date(project.startDate);
-                    if (s < minDate) minDate = s;
-                }
-                if (project.endDate) {
-                    const e = new Date(project.endDate);
-                    if (e > maxDate) maxDate = e;
-                }
-                const totalDays = (dateRange.end - dateRange.start) / (1000 * 60 * 60 * 24);
-                const startOffset = (minDate - dateRange.start) / (1000 * 60 * 60 * 24);
-                const duration = (maxDate - minDate) / (1000 * 60 * 60 * 24) + 1;
-                const leftPercent = (startOffset / totalDays) * 100;
-                const widthPercent = (duration / totalDays) * 100;
-                return `
-                    <div class="gantt-row">
-                        <div class="task-cell">
-                            <div class="task-header">
-                                <span class="task-name">${project.name}</span>
-                            </div>
-                        </div>
-                        <div class="timeline-cell">
-                            <div class="task-bar" style="left: ${leftPercent}%; width: ${widthPercent}%; background: linear-gradient(135deg, var(--primary-color), #5dade2);">
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-            document.getElementById('ganttContainer').innerHTML = header + '<div class="gantt-body">' + rows + '</div>';
-            isMacroView = true;
-            // Afficher le bouton de retour
-            const backBtn = document.getElementById('backToProjectButton');
-            if (backBtn) backBtn.style.display = 'inline-flex';
-        }
-
-        /**
-         * Retourne à la vue détaillée du projet courant en régénérant le Gantt
-         * et en masquant le bouton de retour.
-         */
-        function backToProject() {
-            isMacroView = false;
+            // Réinitialiser la liste des ressources à partir de zéro
+            updateResourcesFromTasks();
+            renderResourceOptions();
+            // Rafraîchir l'interface
             generateGantt();
-            const backBtn = document.getElementById('backToProjectButton');
-            if (backBtn) backBtn.style.display = 'none';
-        }
-
-        /**
-         * Génère une vue Kanban affichant les tâches réparties en colonnes :
-         * - À faire (progression 0%)
-         * - En cours (0 < progression < 100)
-         * - Terminées (progression = 100)
-         * Les cartes permettent d'éditer la tâche en cliquant dessus.
-         */
-        function generateKanban() {
-            if (!tasks || tasks.length === 0) {
-                document.getElementById('ganttContainer').innerHTML = '<div class="empty-state"><div class="empty-state-icon">🗂️</div><div class="empty-state-text">Aucune tâche pour ce projet</div></div>';
-                return;
-            }
-            const todo = tasks.filter(t => t.progress === 0);
-            const inProgress = tasks.filter(t => t.progress > 0 && t.progress < 100);
-            const done = tasks.filter(t => t.progress === 100);
-            const buildCards = (arr) => {
-                return arr.map(task => {
-                    return `<div class="kanban-card" onclick="editTask(${task.id})">
-                                <strong>${task.name}</strong><br>
-                                <small>${task.startDate} → ${task.endDate}</small><br>
-                                ${task.resources ? `<span style="font-size:0.7rem; color: var(--text-muted);">${task.resources}</span>` : ''}
-                            </div>`;
-                }).join('');
-            };
-            const boardHTML = `
-                <div class="kanban-board">
-                    <div class="kanban-column">
-                        <h3>À faire</h3>
-                        ${buildCards(todo)}
-                    </div>
-                    <div class="kanban-column">
-                        <h3>En cours</h3>
-                        ${buildCards(inProgress)}
-                    </div>
-                    <div class="kanban-column">
-                        <h3>Terminées</h3>
-                        ${buildCards(done)}
-                    </div>
-                </div>
-            `;
-            document.getElementById('ganttContainer').innerHTML = boardHTML;
-            // Afficher le bouton de retour pour revenir au Gantt détaillé
-            const backBtn = document.getElementById('backToProjectButton');
-            if (backBtn) backBtn.style.display = 'inline-flex';
+            updateStats();
+            renderProjectDetails();
+            showNotification('Planning vidé avec succès', 'success');
         }
     </script>
 </body>
