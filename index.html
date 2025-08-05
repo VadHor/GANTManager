@@ -965,6 +965,11 @@
                 color: #333 !important;
                 box-shadow: none !important;
             }
+        /* S'assurer que l'intégralité du Gantt est visible à l'impression */
+        .gantt-body {
+            max-height: none !important;
+            overflow: visible !important;
+        }
             
             .task-bar {
                 border: 1px solid #ddd !important;
@@ -2166,8 +2171,47 @@
             showNotification('Export CSV réussi', 'success');
         }
 
+        /**
+         * Exporte les tâches du projet courant dans un fichier Excel (au format
+         * HTML) lisible par les tableurs.  Génère un tableau avec toutes les
+         * informations principales et déclenche un téléchargement d'un fichier
+         * .xls.  Les caractères spéciaux sont échappés pour éviter toute
+         * corruption du fichier.
+         */
         function exportToExcel() {
-            showNotification('Fonctionnalité Excel en développement', 'error');
+            if (!tasks || tasks.length === 0) {
+                showNotification('Aucune tâche à exporter', 'error');
+                return;
+            }
+            // Fonction d'échappement pour le HTML
+            const escapeHTML = (str) => {
+                return String(str)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            };
+            const headers = ['Nom', 'Type', 'Début', 'Fin', 'Ressources', 'Priorité', 'Progression (%)', 'Notes'];
+            let table = '<table border="1" cellspacing="0" cellpadding="5">';
+            table += '<thead><tr>' + headers.map(h => `<th>${escapeHTML(h)}</th>`).join('') + '</tr></thead>';
+            table += '<tbody>';
+            tasks.forEach(task => {
+                table += '<tr>' + [
+                    escapeHTML(task.name),
+                    escapeHTML(task.type),
+                    escapeHTML(task.startDate),
+                    escapeHTML(task.endDate),
+                    escapeHTML(task.resources),
+                    escapeHTML(task.priority),
+                    String(task.progress),
+                    escapeHTML(task.notes || '')
+                ].map(cell => `<td>${cell}</td>`).join('') + '</tr>';
+            });
+            table += '</tbody></table>';
+            const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>${table}</body></html>`;
+            downloadFile(htmlContent, 'gantt_export.xls', 'application/vnd.ms-excel');
+            showNotification('Export Excel réussi', 'success');
         }
 
         function exportToPDF() {
